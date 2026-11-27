@@ -1,0 +1,3280 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Open Design 右侧设计工作区的独立纯前端版本"
+    />
+    <title>Open Design · 独立设计工作区</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --chrome: #f5f6f8;
+        --chrome-strong: #eceef2;
+        --panel: #ffffff;
+        --canvas: #eef2f7;
+        --canvas-dark: #e5ebf3;
+        --border: #dfe4ec;
+        --border-strong: #cbd3df;
+        --text: #17243b;
+        --text-soft: #5e6b80;
+        --text-muted: #8993a3;
+        --accent: #2765eb;
+        --accent-strong: #1f57d1;
+        --accent-tint: #e9f0ff;
+        --success: #16814f;
+        --danger: #cf3d56;
+        --shadow-sm: 0 2px 8px rgba(23, 36, 59, 0.08);
+        --shadow-md: 0 14px 36px rgba(23, 36, 59, 0.16);
+        --radius-sm: 7px;
+        --radius: 10px;
+        --radius-lg: 14px;
+        --font-sans:
+          Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        --font-mono:
+          "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Monaco,
+          Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+        background: var(--canvas);
+        color: var(--text);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 2px solid rgba(39, 101, 235, 0.46);
+        outline-offset: 2px;
+      }
+
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        background: var(--canvas);
+      }
+
+      .app-chrome {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 45px;
+        padding: 7px 14px 7px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--chrome);
+        user-select: none;
+      }
+
+      .tab-strip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .workspace-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        height: 30px;
+        padding: 0 10px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        transition:
+          background 150ms ease,
+          border-color 150ms ease,
+          color 150ms ease;
+      }
+
+      .workspace-tab:hover {
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--text);
+      }
+
+      .workspace-tab.active {
+        border-color: var(--border);
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .workspace-tab .tab-label {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workspace-tab .tab-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        color: var(--text-muted);
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      .workspace-tab .tab-close:hover {
+        background: var(--chrome-strong);
+        color: var(--text);
+      }
+
+      .tab-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 15px;
+        height: 15px;
+        color: var(--text-soft);
+      }
+
+      .tab-icon.grid {
+        border: 1.5px solid currentColor;
+        border-radius: 3px;
+        position: relative;
+      }
+
+      .tab-icon.grid::before,
+      .tab-icon.grid::after {
+        content: "";
+        position: absolute;
+        background: currentColor;
+      }
+
+      .tab-icon.grid::before {
+        left: 4px;
+        top: 1px;
+        bottom: 1px;
+        width: 1px;
+        box-shadow: 4px 0 currentColor;
+      }
+
+      .tab-icon.grid::after {
+        top: 4px;
+        left: 1px;
+        right: 1px;
+        height: 1px;
+        box-shadow: 0 4px currentColor;
+      }
+
+      .tab-icon.file {
+        border: 1.5px solid currentColor;
+        border-radius: 2px;
+        position: relative;
+      }
+
+      .tab-icon.file::after {
+        content: "</>";
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-mono);
+        font-size: 6px;
+        font-weight: 700;
+      }
+
+      .new-tab {
+        display: inline-grid;
+        place-items: center;
+        width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 19px;
+        line-height: 1;
+      }
+
+      .new-tab:hover {
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--text);
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: auto;
+      }
+
+      .icon-button,
+      .toolbar-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        transition:
+          background 140ms ease,
+          color 140ms ease,
+          transform 140ms ease;
+      }
+
+      .icon-button:hover,
+      .toolbar-button:hover {
+        background: var(--chrome-strong);
+        color: var(--text);
+      }
+
+      .icon-button:active,
+      .toolbar-button:active {
+        transform: scale(0.94);
+      }
+
+      .icon-button svg,
+      .toolbar-button svg,
+      .top-action svg,
+      .share-button svg,
+      .mode-tab svg,
+      .viewport-button svg,
+      .floating-button svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .top-action,
+      .share-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 31px;
+        padding: 0 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 650;
+        transition:
+          background 140ms ease,
+          transform 140ms ease;
+      }
+
+      .top-action {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 1px 1px rgba(23, 36, 59, 0.03);
+      }
+
+      .share-button {
+        background: #1b1d22;
+        color: #fff;
+      }
+
+      .top-action:hover {
+        background: #fafbfc;
+      }
+
+      .share-button:hover {
+        background: #2b2e35;
+      }
+
+      .top-action:active,
+      .share-button:active {
+        transform: translateY(1px);
+      }
+
+      .avatar {
+        display: inline-grid;
+        place-items: center;
+        width: 27px;
+        height: 27px;
+        margin-left: 2px;
+        border: 1px solid #15171c;
+        border-radius: 7px;
+        background: #14161a;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .workspace {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .viewer-toolbar {
+        position: relative;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 47px;
+        padding: 7px 16px 7px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text-soft);
+        user-select: none;
+      }
+
+      .viewer-toolbar-left,
+      .viewer-toolbar-right,
+      .toolbar-group {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .viewer-toolbar-left,
+      .viewer-toolbar-right {
+        gap: 5px;
+      }
+
+      .viewer-toolbar-right {
+        margin-left: auto;
+      }
+
+      .mode-tabs {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+        padding: 2px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #f8f9fb;
+      }
+
+      .mode-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 31px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 650;
+        transition:
+          background 140ms ease,
+          color 140ms ease,
+          box-shadow 140ms ease;
+      }
+
+      .mode-tab:hover {
+        color: var(--text);
+      }
+
+      .mode-tab.active {
+        background: #192438;
+        color: #fff;
+        box-shadow: 0 2px 7px rgba(23, 36, 59, 0.2);
+      }
+
+      .viewport-select {
+        position: relative;
+        margin-left: 4px;
+      }
+
+      .viewport-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 31px;
+        padding: 0 9px;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .viewport-button:hover,
+      .viewport-select.open .viewport-button {
+        background: var(--chrome);
+        color: var(--text);
+      }
+
+      .viewport-button .chevron {
+        width: 13px;
+        height: 13px;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 7px);
+        left: 0;
+        z-index: 20;
+        min-width: 168px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow-md);
+      }
+
+      .dropdown-menu.zoom-menu {
+        right: 0;
+        left: auto;
+        min-width: 120px;
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        min-height: 34px;
+        padding: 0 9px;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        text-align: left;
+        font-size: 12px;
+      }
+
+      .dropdown-item:hover,
+      .dropdown-item.active {
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+      }
+
+      .dropdown-item small {
+        color: var(--text-muted);
+        font-size: 10px;
+      }
+
+      .divider {
+        width: 1px;
+        height: 20px;
+        margin: 0 4px;
+        background: var(--border);
+      }
+
+      .toolbar-button.active {
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+      }
+
+      .toolbar-button.comment-count {
+        gap: 4px;
+        width: auto;
+        min-width: 34px;
+        padding: 0 7px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .comment-count-number {
+        min-width: 8px;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .zoom-control {
+        position: relative;
+      }
+
+      .zoom-button {
+        width: auto;
+        min-width: 44px;
+        padding: 0 8px;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .viewer-body {
+        position: relative;
+        display: flex;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--canvas);
+      }
+
+      .preview-canvas {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+        background:
+          linear-gradient(
+              45deg,
+              rgba(203, 211, 223, 0.24) 25%,
+              transparent 25%,
+              transparent 75%,
+              rgba(203, 211, 223, 0.24) 75%
+            )
+            0 0 / 18px 18px,
+          linear-gradient(
+              45deg,
+              rgba(203, 211, 223, 0.24) 25%,
+              transparent 25%,
+              transparent 75%,
+              rgba(203, 211, 223, 0.24) 75%
+            )
+            9px 9px / 18px 18px,
+          var(--canvas);
+        scrollbar-width: thin;
+        scrollbar-color: #c1cad7 transparent;
+      }
+
+      .preview-canvas[data-viewport="desktop"] {
+        padding: 0;
+        background: var(--canvas);
+      }
+
+      .preview-frame-wrap {
+        position: relative;
+        width: 100%;
+        min-width: 100%;
+        height: 100%;
+        min-height: 100%;
+      }
+
+      .preview-canvas[data-viewport="desktop"] .preview-frame-wrap {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+      }
+
+      .preview-frame {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: #fff;
+        box-shadow: none;
+        transform-origin: top left;
+      }
+
+      .preview-canvas[data-viewport="tablet"] .preview-frame-wrap {
+        width: calc(820px * var(--preview-zoom, 1));
+        min-width: calc(820px * var(--preview-zoom, 1));
+        height: calc(1180px * var(--preview-zoom, 1));
+        min-height: calc(1180px * var(--preview-zoom, 1));
+        margin: 26px auto 60px;
+      }
+
+      .preview-canvas[data-viewport="mobile"] .preview-frame-wrap {
+        width: calc(390px * var(--preview-zoom, 1));
+        min-width: calc(390px * var(--preview-zoom, 1));
+        height: calc(844px * var(--preview-zoom, 1));
+        min-height: calc(844px * var(--preview-zoom, 1));
+        margin: 26px auto 60px;
+      }
+
+      .preview-canvas[data-viewport="tablet"] .preview-frame,
+      .preview-canvas[data-viewport="mobile"] .preview-frame {
+        width: var(--frame-width);
+        height: var(--frame-height);
+        border: 1px solid #c4ccd9;
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(23, 36, 59, 0.18);
+        transform: scale(var(--preview-zoom, 1));
+      }
+
+      .preview-canvas[data-viewport="mobile"] .preview-frame {
+        border-radius: 30px;
+      }
+
+      #previewFrame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #fff;
+      }
+
+      .code-view {
+        display: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        background: #151d2d;
+      }
+
+      .code-view.visible {
+        display: flex;
+      }
+
+      .code-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 42px;
+        padding: 7px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        background: #1b2538;
+        color: #aebbd0;
+        font-size: 11px;
+      }
+
+      .code-toolbar strong {
+        color: #e5ebf4;
+        font-weight: 650;
+      }
+
+      .code-toolbar-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .code-status {
+        color: #8b9ab1;
+      }
+
+      .code-status.dirty {
+        color: #f6c454;
+      }
+
+      .run-code {
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .run-code:hover {
+        background: var(--accent-strong);
+      }
+
+      #codeEditor {
+        display: block;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+        resize: none;
+        padding: 22px 24px 32px;
+        border: 0;
+        outline: none;
+        background: #151d2d;
+        color: #dbe4f4;
+        caret-color: #8db1ff;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.7;
+        tab-size: 2;
+        white-space: pre;
+      }
+
+      #codeEditor::selection {
+        background: rgba(72, 115, 212, 0.42);
+      }
+
+      .comment-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      .comment-marker {
+        position: absolute;
+        display: grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 3px 10px rgba(24, 75, 176, 0.34);
+        font-size: 11px;
+        font-weight: 750;
+        pointer-events: auto;
+        cursor: pointer;
+        transform: translate(-50%, -50%);
+      }
+
+      .comment-marker:hover,
+      .comment-marker.active {
+        background: var(--accent-strong);
+        transform: translate(-50%, -50%) scale(1.08);
+      }
+
+      .selection-outline {
+        position: absolute;
+        z-index: 2;
+        border: 2px solid var(--accent);
+        background: rgba(39, 101, 235, 0.1);
+        pointer-events: none;
+      }
+
+      .tool-hint {
+        position: absolute;
+        z-index: 5;
+        top: 14px;
+        left: 50%;
+        max-width: min(460px, calc(100% - 32px));
+        padding: 7px 12px;
+        border: 1px solid rgba(39, 101, 235, 0.2);
+        border-radius: 999px;
+        background: rgba(233, 240, 255, 0.96);
+        color: var(--accent-strong);
+        box-shadow: var(--shadow-sm);
+        font-size: 11px;
+        font-weight: 650;
+        pointer-events: none;
+        transform: translateX(-50%);
+      }
+
+      .comment-panel,
+      .edit-panel {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 8;
+        display: none;
+        width: min(320px, calc(100% - 28px));
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: var(--shadow-md);
+      }
+
+      .comment-panel.visible,
+      .edit-panel.visible {
+        display: block;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 45px;
+        padding: 0 13px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .panel-header strong {
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .panel-close {
+        display: inline-grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 17px;
+      }
+
+      .panel-close:hover {
+        background: var(--chrome);
+        color: var(--text);
+      }
+
+      .comment-list {
+        display: flex;
+        max-height: 260px;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        overflow: auto;
+      }
+
+      .comment-empty {
+        padding: 15px 8px;
+        color: var(--text-muted);
+        font-size: 12px;
+        line-height: 1.6;
+        text-align: center;
+      }
+
+      .comment-card {
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fbfcfe;
+      }
+
+      .comment-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 5px;
+        color: var(--text-muted);
+        font-size: 10px;
+      }
+
+      .comment-card p {
+        margin: 0;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .comment-composer,
+      .edit-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        border-top: 1px solid var(--border);
+      }
+
+      .comment-composer textarea,
+      .edit-fields input {
+        width: 100%;
+        padding: 8px 9px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: #fff;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+
+      .comment-composer textarea {
+        min-height: 66px;
+      }
+
+      .edit-fields label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: var(--text-soft);
+        font-size: 11px;
+      }
+
+      .edit-actions,
+      .comment-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 7px;
+      }
+
+      .secondary-button,
+      .primary-button {
+        min-height: 29px;
+        padding: 0 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .secondary-button {
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text-soft);
+      }
+
+      .primary-button {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary-button:hover {
+        background: var(--chrome);
+        color: var(--text);
+      }
+
+      .primary-button:hover {
+        background: var(--accent-strong);
+      }
+
+      .draw-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: none;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+        pointer-events: none;
+      }
+
+      .draw-layer.visible {
+        display: block;
+        pointer-events: auto;
+      }
+
+      .draw-toolbar {
+        position: absolute;
+        bottom: 18px;
+        left: 50%;
+        z-index: 6;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: var(--shadow-md);
+        transform: translateX(-50%);
+      }
+
+      .draw-toolbar.visible {
+        display: flex;
+      }
+
+      .draw-toolbar span {
+        color: var(--text-soft);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .draw-color {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: #2f6bf0;
+        cursor: pointer;
+      }
+
+      .draw-clear {
+        min-height: 25px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--chrome);
+        color: var(--text-soft);
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .draw-clear:hover {
+        background: var(--chrome-strong);
+        color: var(--text);
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 30;
+        max-width: min(360px, calc(100vw - 36px));
+        padding: 10px 13px;
+        border: 1px solid rgba(23, 36, 59, 0.1);
+        border-radius: 9px;
+        background: #17243b;
+        color: #fff;
+        box-shadow: var(--shadow-md);
+        font-size: 12px;
+        line-height: 1.4;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .empty-code {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #8b9ab1;
+        font-size: 12px;
+      }
+
+      .files-panel-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 18;
+        display: none;
+        background: rgba(23, 36, 59, 0.12);
+      }
+
+      .files-panel-backdrop.visible {
+        display: block;
+      }
+
+      .files-panel {
+        position: fixed;
+        top: 45px;
+        bottom: 0;
+        left: 0;
+        z-index: 19;
+        display: flex;
+        width: min(340px, calc(100vw - 22px));
+        flex-direction: column;
+        border-right: 1px solid var(--border);
+        background: var(--panel);
+        box-shadow: 16px 0 36px rgba(23, 36, 59, 0.12);
+        transform: translateX(-102%);
+        transition: transform 180ms ease;
+      }
+
+      .files-panel.visible {
+        transform: translateX(0);
+      }
+
+      .files-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+        padding: 0 15px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .files-panel-header strong {
+        font-size: 14px;
+      }
+
+      .files-panel-close {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .files-panel-close:hover {
+        background: var(--chrome);
+        color: var(--text);
+      }
+
+      .files-panel-body {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        flex-direction: column;
+        gap: 12px;
+        padding: 13px;
+        overflow: auto;
+      }
+
+      .file-drop-zone {
+        display: flex;
+        min-height: 94px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 12px;
+        border: 1px dashed #b9c6d8;
+        border-radius: 10px;
+        background: #f8faff;
+        color: var(--text-soft);
+        cursor: pointer;
+        text-align: center;
+        transition:
+          border-color 140ms ease,
+          background 140ms ease;
+      }
+
+      .file-drop-zone:hover,
+      .file-drop-zone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+      }
+
+      .file-drop-zone strong {
+        color: inherit;
+        font-size: 12px;
+      }
+
+      .file-drop-zone span {
+        color: var(--text-muted);
+        font-size: 10px;
+      }
+
+      .file-list-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--text-soft);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .file-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 37px;
+        padding: 0 7px 0 9px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .file-row:hover {
+        background: var(--chrome);
+        color: var(--text);
+      }
+
+      .file-row.active {
+        border-color: rgba(39, 101, 235, 0.18);
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+      }
+
+      .file-row-icon {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: var(--chrome);
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .file-row.active .file-row-icon {
+        background: #d7e4ff;
+        color: var(--accent-strong);
+      }
+
+      .file-row-name {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+
+      .file-row-size {
+        flex: 0 0 auto;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .file-panel-empty {
+        padding: 12px 8px;
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1.6;
+        text-align: center;
+      }
+
+      .secondary-view {
+        display: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        background: var(--canvas);
+      }
+
+      .secondary-view.visible {
+        display: flex;
+      }
+
+      .document-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 44px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text-soft);
+        font-size: 12px;
+      }
+
+      .document-toolbar strong {
+        color: var(--text);
+      }
+
+      .document-toolbar-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .sketch-view {
+        background:
+          linear-gradient(
+              45deg,
+              rgba(203, 211, 223, 0.22) 25%,
+              transparent 25%,
+              transparent 75%,
+              rgba(203, 211, 223, 0.22) 75%
+            )
+            0 0 / 18px 18px,
+          linear-gradient(
+              45deg,
+              rgba(203, 211, 223, 0.22) 25%,
+              transparent 25%,
+              transparent 75%,
+              rgba(203, 211, 223, 0.22) 75%
+            )
+            9px 9px / 18px 18px,
+          var(--canvas);
+      }
+
+      .sketch-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 45px;
+        padding: 7px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text-soft);
+      }
+
+      .sketch-toolbar-label {
+        margin-right: 4px;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .sketch-tool {
+        display: inline-grid;
+        place-items: center;
+        width: 29px;
+        height: 29px;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .sketch-tool:hover,
+      .sketch-tool.active {
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+      }
+
+      .sketch-toolbar-spacer {
+        flex: 1 1 auto;
+      }
+
+      .sketch-color {
+        width: 25px;
+        height: 25px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .sketch-canvas-wrap {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+        padding: 28px;
+      }
+
+      #sketchCanvas {
+        display: block;
+        width: 1200px;
+        height: 760px;
+        max-width: none;
+        border: 1px solid #c9d3df;
+        border-radius: 8px;
+        background-color: #fff;
+        background-image:
+          linear-gradient(rgba(189, 200, 215, 0.18) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(189, 200, 215, 0.18) 1px, transparent 1px);
+        background-size: 24px 24px;
+        box-shadow: 0 20px 55px rgba(23, 36, 59, 0.12);
+        cursor: crosshair;
+      }
+
+      .document-view-content {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+        padding: 28px;
+      }
+
+      .document-card {
+        width: min(900px, 100%);
+        min-height: 360px;
+        margin: 0 auto;
+        padding: 30px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .document-card h2 {
+        margin: 0 0 8px;
+        color: var(--text);
+        font-size: 20px;
+      }
+
+      .document-card p {
+        margin: 0 0 18px;
+        color: var(--text-soft);
+        line-height: 1.6;
+      }
+
+      .document-card pre {
+        max-width: 100%;
+        margin: 0;
+        padding: 16px;
+        overflow: auto;
+        border-radius: 8px;
+        background: #17243b;
+        color: #dbe4f4;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.65;
+        white-space: pre-wrap;
+      }
+
+      .document-card img {
+        display: block;
+        max-width: 100%;
+        max-height: 62vh;
+        margin: 0 auto;
+        border-radius: 8px;
+      }
+
+      #documentFrame {
+        display: none;
+        width: 100%;
+        height: 70vh;
+        min-height: 440px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      #documentFrame.visible {
+        display: block;
+      }
+
+      @media (max-width: 780px) {
+        .app-chrome {
+          padding-inline: 8px;
+        }
+
+        .workspace-tab:first-child,
+        .top-actions .icon-button:first-child,
+        .top-actions .icon-button:nth-child(2) {
+          display: none;
+        }
+
+        .top-action {
+          padding-inline: 9px;
+        }
+
+        .share-button {
+          padding-inline: 9px;
+        }
+
+        .viewer-toolbar {
+          padding-inline: 10px;
+        }
+
+        .viewer-toolbar-right .toolbar-button:nth-child(1),
+        .viewer-toolbar-right .toolbar-button:nth-child(2) {
+          display: none;
+        }
+
+        .mode-tab {
+          padding-inline: 9px;
+        }
+
+        .mode-tab span {
+          display: none;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .app-chrome {
+          min-height: 42px;
+        }
+
+        .workspace-tab .tab-label {
+          max-width: 82px;
+        }
+
+        .top-action span,
+        .share-button span {
+          display: none;
+        }
+
+        .top-action,
+        .share-button {
+          width: 31px;
+          justify-content: center;
+          padding: 0;
+        }
+
+        .viewer-toolbar {
+          gap: 6px;
+        }
+
+        .viewer-toolbar-left {
+          flex: 1 1 auto;
+        }
+
+        .viewport-button {
+          padding-inline: 6px;
+        }
+
+        .viewport-button .viewport-label {
+          display: none;
+        }
+
+        .viewer-toolbar-right {
+          gap: 2px;
+        }
+
+        .toolbar-button {
+          width: 28px;
+          height: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-chrome" aria-label="项目标签栏">
+        <nav class="tab-strip" aria-label="工作区标签">
+          <button class="workspace-tab" type="button" data-action="files-tab">
+            <span class="tab-icon grid" aria-hidden="true"></span>
+            <span class="tab-label">设计文件</span>
+          </button>
+          <button class="workspace-tab active" type="button" data-action="file-tab">
+            <span class="tab-icon file" aria-hidden="true"></span>
+            <span class="tab-label">index.html</span>
+            <span class="tab-close" aria-hidden="true">×</span>
+          </button>
+          <button class="new-tab" type="button" title="新建标签" data-action="new-tab">+</button>
+        </nav>
+
+        <div class="top-actions">
+          <button class="icon-button" type="button" title="在新窗口打开" data-action="open-window">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="5" width="14" height="14" rx="2"></rect>
+              <path d="M8 9h6M8 13h4M15 3h5v5M20 3l-7 7"></path>
+            </svg>
+          </button>
+          <button class="icon-button" type="button" title="撤销" data-action="undo">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 8 4 12l5 4"></path>
+              <path d="M5 12h8a6 6 0 0 1 6 6"></path>
+            </svg>
+          </button>
+          <button class="top-action" type="button" data-action="export">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v11"></path>
+              <path d="m8 11 4 4 4-4"></path>
+              <path d="M5 19h14"></path>
+            </svg>
+            <span>导出</span>
+          </button>
+          <button class="share-button" type="button" data-action="share">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 12h10"></path>
+              <path d="m13 6 6 6-6 6"></path>
+            </svg>
+            <span>分享</span>
+          </button>
+          <span class="avatar" aria-label="当前用户">OD</span>
+        </div>
+      </header>
+
+      <div class="files-panel-backdrop" id="filesPanelBackdrop" data-action="close-files"></div>
+      <aside class="files-panel" id="filesPanel" aria-label="设计文件">
+        <div class="files-panel-header">
+          <strong>设计文件</strong>
+          <button class="files-panel-close" type="button" aria-label="关闭设计文件" data-action="close-files">×</button>
+        </div>
+        <div class="files-panel-body">
+          <label class="file-drop-zone" id="fileDropZone">
+            <strong>上传 HTML、草图或文档</strong>
+            <span>支持拖拽文件，也可以点击选择</span>
+            <input id="fileInput" type="file" multiple hidden />
+          </label>
+          <button class="secondary-button" type="button" data-action="new-sketch">新建空白草图</button>
+          <div class="file-list-heading">
+            <span>当前项目文件</span>
+            <span id="fileCount">1 个</span>
+          </div>
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <div class="viewer-toolbar" aria-label="设计预览工具栏">
+          <div class="viewer-toolbar-left">
+            <button
+              class="toolbar-button"
+              type="button"
+              title="刷新预览"
+              data-action="reload"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 11a8.1 8.1 0 0 0-14.8-3.6L4 9"></path>
+                <path d="M4 5v4h4"></path>
+                <path d="M4 13a8.1 8.1 0 0 0 14.8 3.6L20 15"></path>
+                <path d="M20 19v-4h-4"></path>
+              </svg>
+            </button>
+
+            <div class="mode-tabs" role="tablist" aria-label="查看模式">
+              <button
+                class="mode-tab active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                data-mode="preview"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5Z"></path>
+                  <circle cx="12" cy="12" r="2.2"></circle>
+                </svg>
+                <span>预览</span>
+              </button>
+              <button
+                class="mode-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                data-mode="code"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m9 7-5 5 5 5"></path>
+                  <path d="m15 7 5 5-5 5"></path>
+                  <path d="m14 4-4 16"></path>
+                </svg>
+                <span>代码</span>
+              </button>
+            </div>
+
+            <div class="viewport-select" id="viewportSelect">
+              <button
+                class="viewport-button"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                data-action="viewport-toggle"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="12" rx="1.8"></rect>
+                  <path d="M8 20h8M12 17v3"></path>
+                </svg>
+                <span class="viewport-label" id="viewportLabel">桌面端</span>
+                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 10 5 5 5-5"></path>
+                </svg>
+              </button>
+              <div class="dropdown-menu" id="viewportMenu" role="listbox" hidden>
+                <button class="dropdown-item active" type="button" data-viewport="desktop">
+                  <span>桌面端</span>
+                  <small>自适应</small>
+                </button>
+                <button class="dropdown-item" type="button" data-viewport="tablet">
+                  <span>平板端</span>
+                  <small>820 × 1180</small>
+                </button>
+                <button class="dropdown-item" type="button" data-viewport="mobile">
+                  <span>移动端</span>
+                  <small>390 × 844</small>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="viewer-toolbar-right">
+            <button
+              class="toolbar-button"
+              type="button"
+              title="截图 / 打印预览"
+              data-action="screenshot"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 8h2l1.2-2h5.6L16 8h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"></path>
+                <circle cx="12" cy="13.5" r="3"></circle>
+              </svg>
+            </button>
+            <button
+              class="toolbar-button"
+              type="button"
+              title="在新标签中打开预览"
+              data-action="open-window"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 5h5v5"></path>
+                <path d="m19 5-8 8"></path>
+                <path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"></path>
+              </svg>
+            </button>
+            <button
+              class="toolbar-button"
+              type="button"
+              title="评论模式"
+              aria-pressed="false"
+              data-tool="comment"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 5h14v10H9l-4 4V5Z"></path>
+                <path d="M8 9h8M8 12h5"></path>
+              </svg>
+            </button>
+            <button
+              class="toolbar-button"
+              type="button"
+              title="标注模式"
+              aria-pressed="false"
+              data-tool="draw"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m4 16 9.5-9.5a2.1 2.1 0 0 1 3 3L7 19H4v-3Z"></path>
+                <path d="m13 7 3 3M4 21h16"></path>
+              </svg>
+            </button>
+            <button
+              class="toolbar-button comment-count"
+              type="button"
+              title="查看评论"
+              aria-expanded="false"
+              data-action="comments"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 5h14v10H9l-4 4V5Z"></path>
+              </svg>
+              <span class="comment-count-number" id="commentCount">0</span>
+            </button>
+            <div class="divider" aria-hidden="true"></div>
+            <div class="zoom-control" id="zoomControl">
+              <button
+                class="toolbar-button zoom-button"
+                type="button"
+                title="调整缩放"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                data-action="zoom-toggle"
+              >
+                <span id="zoomLabel">100%</span>
+              </button>
+              <div class="dropdown-menu zoom-menu" id="zoomMenu" role="menu" hidden>
+                <button class="dropdown-item" type="button" data-zoom="50">50%</button>
+                <button class="dropdown-item" type="button" data-zoom="75">75%</button>
+                <button class="dropdown-item active" type="button" data-zoom="100">100%</button>
+                <button class="dropdown-item" type="button" data-zoom="125">125%</button>
+                <button class="dropdown-item" type="button" data-zoom="150">150%</button>
+                <button class="dropdown-item" type="button" data-zoom="200">200%</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="viewer-body">
+          <div class="preview-canvas" id="previewCanvas" data-viewport="desktop">
+            <div
+              class="preview-frame-wrap"
+              id="previewFrameWrap"
+              style="--frame-width: 100%; --frame-height: 100%"
+            >
+              <div class="preview-frame" id="previewFrameShell">
+                <iframe
+                  id="previewFrame"
+                  title="index.html 预览"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                ></iframe>
+              </div>
+            </div>
+            <div class="comment-layer" id="commentLayer" aria-hidden="true"></div>
+            <canvas class="draw-layer" id="drawLayer" aria-label="设计标注画布"></canvas>
+            <div class="draw-toolbar" id="drawToolbar">
+              <span>正在标注</span>
+              <input class="draw-color" id="drawColor" type="color" value="#2f6bf0" aria-label="标注颜色" />
+              <button class="draw-clear" type="button" data-action="clear-drawing">清除</button>
+              <button class="draw-clear" type="button" data-action="finish-drawing">完成</button>
+            </div>
+            <div class="tool-hint" id="toolHint" hidden></div>
+            <div class="selection-outline" id="selectionOutline" hidden></div>
+          </div>
+
+          <section class="secondary-view sketch-view" id="sketchView" aria-label="草图编辑器">
+            <div class="sketch-toolbar">
+              <span class="sketch-toolbar-label">草图编辑</span>
+              <button class="sketch-tool active" type="button" title="选择" data-sketch-tool="select">↖</button>
+              <button class="sketch-tool" type="button" title="矩形" data-sketch-tool="rect">□</button>
+              <button class="sketch-tool" type="button" title="椭圆" data-sketch-tool="ellipse">○</button>
+              <button class="sketch-tool" type="button" title="箭头" data-sketch-tool="arrow">↗</button>
+              <button class="sketch-tool" type="button" title="自由绘制" data-sketch-tool="pen">✎</button>
+              <button class="sketch-tool" type="button" title="文字" data-sketch-tool="text">T</button>
+              <button class="sketch-tool" type="button" title="橡皮擦" data-sketch-tool="erase">⌫</button>
+              <span class="sketch-toolbar-spacer"></span>
+              <input class="sketch-color" id="sketchColor" type="color" value="#2765eb" title="画笔颜色" />
+              <button class="secondary-button" type="button" data-action="clear-sketch">清空</button>
+              <button class="secondary-button" type="button" data-action="export-sketch">导出 PNG</button>
+              <button class="primary-button" type="button" data-action="save-sketch">保存草图</button>
+            </div>
+            <div class="sketch-canvas-wrap">
+              <canvas id="sketchCanvas" width="1200" height="760"></canvas>
+            </div>
+          </section>
+
+          <section class="secondary-view document-view" id="documentView" aria-label="文档预览">
+            <div class="document-toolbar">
+              <span><strong id="documentTitle">文档</strong> · 文件预览</span>
+              <div class="document-toolbar-actions">
+                <button class="secondary-button" type="button" data-action="download-file">下载文件</button>
+                <button class="primary-button" type="button" data-action="open-document">新窗口打开</button>
+              </div>
+            </div>
+            <div class="document-view-content">
+              <div class="document-card" id="documentCard">
+                <h2 id="documentHeading">正在加载</h2>
+                <p id="documentDescription">选择一个文档或上传文件后，这里会显示真实文件内容。</p>
+                <pre id="documentText"></pre>
+                <img id="documentImage" alt="上传的图片预览" hidden />
+                <iframe id="documentFrame" title="文档预览"></iframe>
+              </div>
+            </div>
+          </section>
+
+          <aside class="comment-panel" id="commentPanel" aria-label="评论面板">
+            <div class="panel-header">
+              <strong>评论</strong>
+              <button class="panel-close" type="button" aria-label="关闭评论" data-action="close-comments">×</button>
+            </div>
+            <div class="comment-list" id="commentList">
+              <div class="comment-empty" id="commentEmpty">
+                还没有评论。点击评论工具后，再点击预览中的元素即可添加。
+              </div>
+            </div>
+            <div class="comment-composer" id="commentComposer" hidden>
+              <textarea id="commentDraft" placeholder="写下对这个元素的修改建议…"></textarea>
+              <div class="comment-actions">
+                <button class="secondary-button" type="button" data-action="cancel-comment">取消</button>
+                <button class="primary-button" type="button" data-action="save-comment">添加评论</button>
+              </div>
+            </div>
+          </aside>
+
+          <aside class="edit-panel" id="editPanel" aria-label="手动编辑面板">
+            <div class="panel-header">
+              <strong>编辑元素</strong>
+              <button class="panel-close" type="button" aria-label="关闭编辑" data-action="close-edit">×</button>
+            </div>
+            <div class="edit-fields">
+              <label>
+                文本
+                <input id="editText" type="text" />
+              </label>
+              <label>
+                文字颜色
+                <input id="editColor" type="text" placeholder="#17243b" />
+              </label>
+              <div class="edit-actions">
+                <button class="secondary-button" type="button" data-action="close-edit">取消</button>
+                <button class="primary-button" type="button" data-action="apply-edit">应用修改</button>
+              </div>
+            </div>
+          </aside>
+
+          <section class="code-view" id="codeView" aria-label="HTML 源码编辑器">
+            <div class="code-toolbar">
+              <span><strong id="codeFileTitle">index.html</strong> · 纯前端预览源代码</span>
+              <div class="code-toolbar-actions">
+                <span class="code-status" id="codeStatus">已保存</span>
+                <button class="run-code" type="button" data-action="run-code">运行预览</button>
+              </div>
+            </div>
+            <textarea id="codeEditor" spellcheck="false" aria-label="编辑 HTML"></textarea>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      /*
+       * Standalone extraction boundary:
+       * - HTML preview, source switching, viewport, zoom, comments, drawing and
+       *   manual edit follow apps/web/src/components/FileViewer.tsx.
+       * - File discovery/upload follows apps/web/src/components/DesignFilesPanel.tsx.
+       * - Sketch scene persistence and canvas tools follow
+       *   apps/web/src/components/SketchEditor.tsx and sketch-model.ts.
+       *
+       * The standalone host keeps those interactions local so it can run
+       * without the daemon while preserving the same right-side workbench
+       * entry points.
+       */
+      const sampleDocument = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowmark</title>
+  <style>
+    :root {
+      --ink: #18243b;
+      --muted: #60718d;
+      --blue: #2f64eb;
+      --line: #d9e1ed;
+      --surface: #ffffff;
+      --canvas: #f3f7fd;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .page { min-height: 100%; padding: 26px 48px 80px; }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 780; letter-spacing: -.04em; }
+    .brand-mark { width: 27px; height: 27px; border-radius: 7px; background: var(--blue); }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: #52627d; font-size: 13px; font-weight: 600; }
+    .nav-links a:last-child { color: var(--blue); }
+    .hero { max-width: 870px; margin: 72px auto 42px; text-align: center; }
+    .eyebrow { margin-bottom: 15px; color: var(--blue); font-size: 13px; font-weight: 750; letter-spacing: .04em; }
+    h1 { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(50px, 6vw, 76px); font-weight: 500; letter-spacing: -.065em; line-height: 1.04; }
+    .hero-copy { max-width: 650px; margin: 18px auto 30px; color: var(--muted); font-size: 18px; line-height: 1.55; }
+    .billing { display: inline-flex; align-items: center; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: #fff; box-shadow: 0 8px 24px rgba(25, 47, 86, .07); }
+    .billing button { min-width: 95px; padding: 9px 14px; border: 0; border-radius: 999px; background: transparent; color: #62718a; cursor: pointer; font-size: 13px; font-weight: 700; }
+    .billing button.active { background: var(--ink); color: #fff; }
+    .billing .save { padding-inline: 12px; color: #16814f; font-size: 12px; }
+    .pricing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 1180px; margin: 0 auto; }
+    .plan { position: relative; display: flex; min-height: 510px; flex-direction: column; padding: 31px 28px 27px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 10px 26px rgba(25, 47, 86, .03); }
+    .plan.featured { border: 2px solid var(--blue); padding: 30px 27px 26px; box-shadow: 0 20px 36px rgba(47, 100, 235, .12); }
+    .plan-badge { position: absolute; top: -14px; left: 24px; padding: 5px 11px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 11px; font-weight: 760; }
+    .plan h2 { margin: 0 0 10px; font-size: 23px; letter-spacing: -.03em; }
+    .plan-description { min-height: 40px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .price { display: flex; align-items: baseline; gap: 6px; margin: 39px 0 5px; font-family: Georgia, "Songti SC", serif; }
+    .price strong { font-size: 51px; font-weight: 600; letter-spacing: -.06em; line-height: 1; }
+    .price span { color: var(--muted); font-family: inherit; font-size: 13px; }
+    .price-note { min-height: 23px; margin: 0; color: #187b50; font-size: 12px; }
+    .plan-divider { height: 1px; margin: 21px 0 20px; background: var(--line); }
+    .features { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; color: #31405a; font-size: 13px; }
+    .features li { display: flex; align-items: flex-start; gap: 9px; line-height: 1.45; }
+    .features li::before { content: "✓"; color: #12824e; font-size: 14px; font-weight: 800; }
+    .plan-cta { width: 100%; margin-top: auto; padding: 12px 16px; border: 1px solid var(--ink); border-radius: 7px; background: #fff; color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 750; }
+    .plan-cta:hover { background: #f7f9fc; }
+    .plan.featured .plan-cta { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .plan.featured .plan-cta:hover { background: #2458d1; }
+    .comparison { max-width: 1180px; margin: 82px auto 0; }
+    .comparison h2 { margin: 0 0 13px; font-family: Georgia, "Songti SC", serif; font-size: 42px; font-weight: 500; letter-spacing: -.045em; }
+    .comparison p { margin: 0 0 24px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; border-top: 1px solid var(--line); color: #34425b; }
+    .comparison-table th, .comparison-table td { padding: 15px 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13px; }
+    .comparison-table th { color: var(--ink); font-weight: 700; }
+    .comparison-table td:not(:first-child), .comparison-table th:not(:first-child) { text-align: center; }
+    @media (max-width: 780px) {
+      .page { padding: 22px 20px 60px; }
+      .nav-links { display: none; }
+      .hero { margin-top: 52px; }
+      .hero-copy { font-size: 15px; }
+      .pricing { grid-template-columns: 1fr; }
+      .plan { min-height: 0; }
+      .comparison { margin-top: 58px; overflow: auto; }
+      .comparison-table { min-width: 620px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" data-design-id="nav">
+      <a class="brand" href="#pricing" data-design-id="brand"><span class="brand-mark"></span><span>Flowmark</span></a>
+      <div class="nav-links">
+        <a href="#comparison" data-design-id="nav-feature">功能对比</a>
+        <a href="#faq" data-design-id="nav-faq">常见问题</a>
+        <a href="#pricing" data-design-id="nav-start">开始使用</a>
+      </div>
+    </nav>
+    <section class="hero" data-design-id="hero">
+      <div class="eyebrow" data-design-id="eyebrow">清晰协作，专注交付</div>
+      <h1 data-design-id="hero-title">选择适合团队的节奏</h1>
+      <p class="hero-copy" data-design-id="hero-copy">从个人项目到跨部门协作，Flowmark 让任务、讨论和进度始终在同一个地方。</p>
+      <div class="billing" data-design-id="billing">
+        <button class="active" type="button" data-billing="monthly" data-design-id="monthly-toggle">按月计费</button>
+        <button type="button" data-billing="yearly" data-design-id="yearly-toggle">按年计费</button>
+        <span class="save" data-design-id="save-note">年付省 2 个月</span>
+      </div>
+    </section>
+    <section class="pricing" id="pricing" data-design-id="pricing">
+      <article class="plan" data-design-id="free-plan">
+        <h2>自由版</h2>
+        <p class="plan-description">适合个人和刚开始协作的小团队。</p>
+        <div class="price"><strong>¥0</strong><span>/ 人 / 月</span></div>
+        <p class="price-note">永久免费</p>
+        <div class="plan-divider"></div>
+        <ul class="features">
+          <li>最多 5 位成员</li>
+          <li>3 个项目空间</li>
+          <li>基础任务与看板</li>
+          <li>7 天操作记录</li>
+        </ul>
+        <button class="plan-cta" type="button" data-design-id="free-cta">了解自由版</button>
+      </article>
+      <article class="plan featured" data-design-id="pro-plan">
+        <span class="plan-badge">最受欢迎</span>
+        <h2>专业版</h2>
+        <p class="plan-description">适合需要稳定节奏和清晰流程的成长团队。</p>
+        <div class="price"><strong data-price-monthly="¥49" data-price-yearly="¥39">¥49</strong><span>/ 人 / 月</span></div>
+        <p class="price-note" data-note-monthly="年付每人每月 ¥39" data-note-yearly="每年一次性结算">年付每人每月 ¥39</p>
+        <div class="plan-divider"></div>
+        <ul class="features">
+          <li>无限项目与成员</li>
+          <li>时间线、自动化规则</li>
+          <li>自定义字段与模板</li>
+          <li>1 年操作记录</li>
+          <li>优先邮件支持</li>
+        </ul>
+        <button class="plan-cta" type="button" data-design-id="pro-cta">开始 14 天试用</button>
+      </article>
+      <article class="plan" data-design-id="team-plan">
+        <h2>团队版</h2>
+        <p class="plan-description">适合有权限管理和统一支持需求的组织。</p>
+        <div class="price"><strong data-price-monthly="¥99" data-price-yearly="¥79">¥99</strong><span>/ 人 / 月</span></div>
+        <p class="price-note" data-note-monthly="年付每人每月 ¥79" data-note-yearly="每年一次性结算">年付每人每月 ¥79</p>
+        <div class="plan-divider"></div>
+        <ul class="features">
+          <li>专业版全部功能</li>
+          <li>单点登录（SSO）</li>
+          <li>成员角色与权限</li>
+          <li>无限操作记录</li>
+          <li>专属客户成功支持</li>
+        </ul>
+        <button class="plan-cta" type="button" data-design-id="team-cta">联系销售</button>
+      </article>
+    </section>
+    <section class="comparison" id="comparison" data-design-id="comparison">
+      <h2>功能对比</h2>
+      <p>按团队规模选择合适的协作能力。</p>
+      <table class="comparison-table">
+        <thead><tr><th>功能</th><th>自由版</th><th>专业版</th><th>团队版</th></tr></thead>
+        <tbody>
+          <tr><td>项目空间</td><td>3</td><td>无限</td><td>无限</td></tr>
+          <tr><td>自动化规则</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>权限与 SSO</td><td>—</td><td>—</td><td>✓</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="faq" style="height: 180px; padding-top: 70px; color: #60718d;" data-design-id="faq">常见问题与帮助中心</section>
+  </main>
+  <script>
+    const parentWindow = window.parent;
+    function emit(message) { parentWindow.postMessage(message, "*"); }
+    document.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-design-id]");
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const id = target.dataset.designId || "";
+      const text = (target.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 120);
+      if (target.matches("a, button")) event.preventDefault();
+      emit({ type: "design-element-click", id, text, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, scrollY: window.scrollY });
+      if (target.matches("[data-billing]")) {
+        const yearly = target.dataset.billing === "yearly";
+        document.querySelectorAll("[data-billing]").forEach((button) => button.classList.toggle("active", button.dataset.billing === target.dataset.billing));
+        document.querySelectorAll("[data-price-monthly]").forEach((price) => { price.textContent = yearly ? price.dataset.priceYearly : price.dataset.priceMonthly; });
+        document.querySelectorAll("[data-note-monthly]").forEach((note) => { note.textContent = yearly ? note.dataset.noteYearly : note.dataset.noteMonthly; });
+        emit({ type: "design-billing-change", yearly });
+      } else if (target.matches("button.plan-cta")) {
+        emit({ type: "design-action", label: text });
+      }
+    });
+    window.addEventListener("message", (event) => {
+      const message = event.data || {};
+      if (message.type !== "design-apply-edit" || !message.id) return;
+      const target = document.querySelector("[data-design-id='" + CSS.escape(message.id) + "']");
+      if (!target) return;
+      if (typeof message.text === "string" && target.children.length === 0) target.textContent = message.text;
+      if (typeof message.color === "string" && message.color.trim()) target.style.color = message.color.trim();
+      emit({ type: "design-edit-applied", id: message.id });
+    });
+  <\/script>
+</body>
+</html>`;
+
+      const state = {
+        mode: "preview",
+        viewport: "desktop",
+        zoom: 100,
+        tool: null,
+        activeFileName: "index.html",
+        files: new Map([
+          ["index.html", {
+            name: "index.html",
+            kind: "html",
+            text: sampleDocument,
+            size: new Blob([sampleDocument]).size,
+            type: "text/html",
+          }],
+        ]),
+        comments: [],
+        history: [],
+        selectedTarget: null,
+        draftComment: null,
+        code: sampleDocument,
+        codeDirty: false,
+        sketch: {
+          tool: "select",
+          color: "#2765eb",
+          elements: [],
+          activePointer: null,
+        },
+      };
+
+      const elements = {
+        canvas: document.getElementById("previewCanvas"),
+        frameWrap: document.getElementById("previewFrameWrap"),
+        frameShell: document.getElementById("previewFrameShell"),
+        frame: document.getElementById("previewFrame"),
+        codeView: document.getElementById("codeView"),
+        editor: document.getElementById("codeEditor"),
+        codeStatus: document.getElementById("codeStatus"),
+        commentLayer: document.getElementById("commentLayer"),
+        commentPanel: document.getElementById("commentPanel"),
+        commentList: document.getElementById("commentList"),
+        commentEmpty: document.getElementById("commentEmpty"),
+        commentComposer: document.getElementById("commentComposer"),
+        commentDraft: document.getElementById("commentDraft"),
+        codeFileTitle: document.getElementById("codeFileTitle"),
+        editPanel: document.getElementById("editPanel"),
+        editText: document.getElementById("editText"),
+        editColor: document.getElementById("editColor"),
+        toolHint: document.getElementById("toolHint"),
+        selectionOutline: document.getElementById("selectionOutline"),
+        drawLayer: document.getElementById("drawLayer"),
+        drawToolbar: document.getElementById("drawToolbar"),
+        drawColor: document.getElementById("drawColor"),
+        toast: document.getElementById("toast"),
+        commentCount: document.getElementById("commentCount"),
+        zoomLabel: document.getElementById("zoomLabel"),
+        viewportLabel: document.getElementById("viewportLabel"),
+        viewportSelect: document.getElementById("viewportSelect"),
+        viewportMenu: document.getElementById("viewportMenu"),
+        zoomControl: document.getElementById("zoomControl"),
+        zoomMenu: document.getElementById("zoomMenu"),
+        filesPanel: document.getElementById("filesPanel"),
+        filesPanelBackdrop: document.getElementById("filesPanelBackdrop"),
+        fileDropZone: document.getElementById("fileDropZone"),
+        fileInput: document.getElementById("fileInput"),
+        fileList: document.getElementById("fileList"),
+        fileCount: document.getElementById("fileCount"),
+        sketchView: document.getElementById("sketchView"),
+        sketchCanvas: document.getElementById("sketchCanvas"),
+        sketchColor: document.getElementById("sketchColor"),
+        documentView: document.getElementById("documentView"),
+        documentTitle: document.getElementById("documentTitle"),
+        documentHeading: document.getElementById("documentHeading"),
+        documentDescription: document.getElementById("documentDescription"),
+        documentText: document.getElementById("documentText"),
+        documentImage: document.getElementById("documentImage"),
+        documentFrame: document.getElementById("documentFrame"),
+      };
+
+      let toastTimer = null;
+      let drawing = false;
+      let lastDrawPoint = null;
+
+      function showToast(message) {
+        elements.toast.textContent = message;
+        elements.toast.classList.add("visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+          elements.toast.classList.remove("visible");
+        }, 2600);
+      }
+
+      function activeFile() {
+        return state.files.get(state.activeFileName) || null;
+      }
+
+      function recordHistory() {
+        const file = activeFile();
+        if (!file) return;
+        syncActiveFileFromSurface();
+        state.history.push({
+          fileName: file.name,
+          kind: file.kind,
+          text: file.text || "",
+          elements: file.kind === "sketch" ? structuredClone(state.sketch.elements) : null,
+        });
+        if (state.history.length > 24) state.history.shift();
+      }
+
+      function undoLastChange() {
+        const snapshot = state.history.pop();
+        if (!snapshot) {
+          showToast("当前文件没有可撤销的操作");
+          return;
+        }
+        const file = state.files.get(snapshot.fileName);
+        if (!file) return;
+        file.text = snapshot.text;
+        file.size = new Blob([file.text]).size;
+        if (snapshot.kind === "sketch") {
+          state.sketch.elements = structuredClone(snapshot.elements || []);
+        }
+        state.activeFileName = snapshot.fileName;
+        renderActiveFile();
+        showToast("已撤销上一步操作");
+      }
+
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+      }
+
+      function fileKind(name, type = "") {
+        const extension = name.split(".").pop()?.toLowerCase() || "";
+        if (["html", "htm"].includes(extension)) return "html";
+        if (extension === "sketch" || name.toLowerCase().endsWith(".sketch.json")) return "sketch";
+        if (extension === "pdf" || type === "application/pdf") return "pdf";
+        if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(extension) || type.startsWith("image/")) return "image";
+        if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(extension)) return "document";
+        if (["css", "scss", "sass", "less", "js", "jsx", "ts", "tsx", "json"].includes(extension)) return "code";
+        if (["txt", "md", "markdown", "csv", "xml", "yaml", "yml"].includes(extension)) return "text";
+        return "binary";
+      }
+
+      function fileIcon(kind) {
+        return {
+          html: "HTML",
+          sketch: "SK",
+          pdf: "PDF",
+          image: "IMG",
+          document: "DOC",
+          code: "</>",
+          text: "TXT",
+          binary: "BIN",
+        }[kind] || "FILE";
+      }
+
+      function renderFileList() {
+        elements.fileList.innerHTML = "";
+        elements.fileCount.textContent = `${state.files.size} 个`;
+        if (state.files.size === 0) {
+          elements.fileList.innerHTML = '<div class="file-panel-empty">上传文件后会显示在这里。</div>';
+          return;
+        }
+        for (const file of state.files.values()) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `file-row${file.name === state.activeFileName ? " active" : ""}`;
+          button.innerHTML =
+            `<span class="file-row-icon">${fileIcon(file.kind)}</span>` +
+            `<span class="file-row-name">${escapeHtml(file.name)}</span>` +
+            `<span class="file-row-size">${formatBytes(file.size)}</span>`;
+          button.addEventListener("click", () => {
+            openFile(file.name);
+            closeFilesPanel();
+          });
+          elements.fileList.appendChild(button);
+        }
+      }
+
+      function openFilesPanel() {
+        elements.filesPanel.classList.add("visible");
+        elements.filesPanelBackdrop.classList.add("visible");
+        renderFileList();
+      }
+
+      function closeFilesPanel() {
+        elements.filesPanel.classList.remove("visible");
+        elements.filesPanelBackdrop.classList.remove("visible");
+      }
+
+      function updateFileTabLabel() {
+        const tab = document.querySelector('[data-action="file-tab"] .tab-label');
+        if (tab) tab.textContent = state.activeFileName;
+      }
+
+      function setSurfaceMode(mode) {
+        state.mode = mode;
+        elements.canvas.style.display = mode === "preview" ? "" : "none";
+        elements.codeView.classList.toggle("visible", mode === "code");
+        elements.sketchView.classList.toggle("visible", mode === "sketch");
+        elements.documentView.classList.toggle("visible", mode === "document");
+        document.querySelectorAll(".mode-tab").forEach((tab) => {
+          const active = tab.dataset.mode === mode;
+          tab.classList.toggle("active", active);
+          tab.setAttribute("aria-selected", String(active));
+        });
+      }
+
+      function syncActiveFileFromSurface() {
+        const file = activeFile();
+        if (!file) return;
+        if (file.kind === "html" && state.mode === "preview") {
+          state.code = currentFrameHtml();
+        } else if (state.mode === "code") {
+          state.code = elements.editor.value;
+        }
+        if (file.kind === "sketch" && state.mode === "sketch") {
+          file.text = JSON.stringify({
+            type: "open-design-sketch",
+            version: 1,
+            elements: state.sketch.elements,
+            appState: {},
+            files: {},
+          }, null, 2);
+          file.size = new Blob([file.text]).size;
+        } else if (file.kind === "html" || file.kind === "code" || file.kind === "text") {
+          file.text = state.code;
+          file.size = new Blob([state.code]).size;
+        }
+      }
+
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function buildPreviewHtml(source) {
+        let html = source;
+        for (const file of state.files.values()) {
+          const fileName = file.name.split("/").pop() || file.name;
+          const escapedName = escapeRegExp(fileName);
+          if ((file.kind === "image" || file.kind === "pdf") && file.url) {
+            html = html.replace(new RegExp(`([\"'])${escapedName}([\"'])`, "g"), `$1${file.url}$2`);
+            html = html.replace(new RegExp(`([\"'])\\.\\/${escapedName}([\"'])`, "g"), `$1${file.url}$2`);
+          }
+          if (file.kind === "code" && /\.(css|scss|sass|less)$/i.test(file.name) && file.text) {
+            const style = `<style data-open-design-asset="${escapeHtml(file.name)}">\n${file.text}\n</style>`;
+            html = html.replace(
+              new RegExp(`<link([^>]+?)href=([\"'])[^\"']*${escapedName}([\"'])([^>]*)>`, "i"),
+              style,
+            );
+          }
+          if (file.kind === "code" && /\.(js|jsx|ts|tsx)$/i.test(file.name) && file.text) {
+            const script = `<script data-open-design-asset="${escapeHtml(file.name)}">\n${file.text}\n<\/script>`;
+            html = html.replace(
+              new RegExp(`<script([^>]+?)src=([\"'])[^\"']*${escapedName}([\"'])([^>]*)>\\s*<\\/script>`, "i"),
+              script,
+            );
+          }
+        }
+        return html;
+      }
+
+      function resetCommentsForFile() {
+        state.comments = [];
+        state.draftComment = null;
+        closeComments();
+        renderCommentMarkers();
+      }
+
+      function renderActiveFile() {
+        const file = activeFile();
+        if (!file) return;
+        state.activeFileName = file.name;
+        updateFileTabLabel();
+        elements.codeFileTitle.textContent = file.name;
+        resetCommentsForFile();
+        if (file.kind === "html") {
+          state.code = file.text || "<!doctype html><html><body><h1>空白页面</h1></body></html>";
+          setSurfaceMode("preview");
+          renderFrame();
+        } else if (file.kind === "sketch") {
+          setSurfaceMode("sketch");
+          loadSketchFile(file);
+        } else {
+          setSurfaceMode("document");
+          renderDocumentFile(file);
+        }
+        renderFileList();
+      }
+
+      function openFile(name) {
+        syncActiveFileFromSurface();
+        if (!state.files.has(name)) return;
+        state.activeFileName = name;
+        renderActiveFile();
+      }
+
+      function makeFileRecord(rawFile, text, url = "") {
+        return {
+          name: rawFile.webkitRelativePath || rawFile.name,
+          kind: fileKind(rawFile.name, rawFile.type),
+          text,
+          size: rawFile.size,
+          type: rawFile.type || "application/octet-stream",
+          blob: rawFile,
+          url,
+        };
+      }
+
+      async function importFiles(fileList) {
+        const picked = Array.from(fileList || []);
+        if (picked.length === 0) return;
+        let lastName = null;
+        for (const rawFile of picked) {
+          const kind = fileKind(rawFile.name, rawFile.type);
+          let text = "";
+          let url = "";
+          if (kind === "html" || kind === "sketch" || kind === "code" || kind === "text") {
+            text = await rawFile.text();
+          } else {
+            url = URL.createObjectURL(rawFile);
+          }
+          const record = makeFileRecord(rawFile, text, url);
+          state.files.set(record.name, record);
+          lastName = record.name;
+        }
+        if (lastName) openFile(lastName);
+        renderFileList();
+        showToast(`已导入 ${picked.length} 个文件`);
+      }
+
+      function renderDocumentFile(file) {
+        elements.documentTitle.textContent = file.name;
+        elements.documentHeading.textContent = file.name;
+        elements.documentDescription.textContent = `${file.kind.toUpperCase()} · ${formatBytes(file.size)}`;
+        elements.documentText.hidden = true;
+        elements.documentImage.hidden = true;
+        elements.documentFrame.classList.remove("visible");
+        if (file.kind === "image") {
+          elements.documentImage.src = file.url;
+          elements.documentImage.hidden = false;
+          return;
+        }
+        if (file.kind === "pdf") {
+          elements.documentFrame.src = file.url;
+          elements.documentFrame.classList.add("visible");
+          return;
+        }
+        elements.documentText.textContent = file.text || "该文件类型暂时不能在浏览器中直接解析，可以使用下载或新窗口打开。";
+        elements.documentText.hidden = false;
+      }
+
+      function downloadCurrentFile() {
+        const file = activeFile();
+        if (!file) return;
+        syncActiveFileFromSurface();
+        if (file.kind === "image" || file.kind === "pdf" || file.kind === "binary" || file.kind === "document") {
+          if (file.url) {
+            const link = document.createElement("a");
+            link.href = file.url;
+            link.download = file.name;
+            link.click();
+            return;
+          }
+        }
+        const blob = new Blob([file.text || ""], { type: file.type || "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function openCurrentFileInNewWindow() {
+        const file = activeFile();
+        if (!file) return;
+        syncActiveFileFromSurface();
+        if (file.url) {
+          window.open(file.url, "_blank");
+          return;
+        }
+        const blob = new Blob([file.text || ""], { type: file.type || "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+        window.setTimeout(() => URL.revokeObjectURL(url), 15000);
+      }
+
+      function sketchPoint(event) {
+        const rect = elements.sketchCanvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * (elements.sketchCanvas.width / rect.width),
+          y: (event.clientY - rect.top) * (elements.sketchCanvas.height / rect.height),
+        };
+      }
+
+      function loadSketchFile(file) {
+        let parsed = {};
+        try {
+          parsed = JSON.parse(file.text || "{}");
+        } catch {
+          parsed = {};
+        }
+        const elementsFromFile =
+          Array.isArray(parsed.elements)
+            ? parsed.elements
+            : Array.isArray(parsed.scene?.elements)
+              ? parsed.scene.elements
+              : Array.isArray(parsed.items)
+                ? parsed.items
+                : [];
+        state.sketch.elements = elementsFromFile.map((item) => ({
+          type: item.type || "rect",
+          x: Number(item.x) || 0,
+          y: Number(item.y) || 0,
+          x2: Number(item.x2 ?? item.x + (item.width || 0)) || 0,
+          y2: Number(item.y2 ?? item.y + (item.height || 0)) || 0,
+          width: Number(item.width) || 0,
+          height: Number(item.height) || 0,
+          text: typeof item.text === "string" ? item.text : "",
+          color: item.color || item.strokeColor || state.sketch.color,
+        }));
+        drawSketchScene();
+      }
+
+      function drawSketchScene(previewElement = null) {
+        const canvas = elements.sketchCanvas;
+        const context = canvas.getContext("2d");
+        if (!context) return;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.save();
+        context.lineWidth = 3;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        for (const item of state.sketch.elements) {
+          drawSketchElement(context, item);
+        }
+        if (previewElement) drawSketchElement(context, previewElement);
+        context.restore();
+      }
+
+      function drawSketchElement(context, item) {
+        const color = item.color || state.sketch.color;
+        context.strokeStyle = color;
+        context.fillStyle = color;
+        context.lineWidth = item.type === "pen" ? 3 : 2;
+        if (item.type === "rect") {
+          context.strokeRect(item.x, item.y, item.width, item.height);
+        } else if (item.type === "ellipse") {
+          context.beginPath();
+          context.ellipse(
+            item.x + item.width / 2,
+            item.y + item.height / 2,
+            Math.abs(item.width / 2),
+            Math.abs(item.height / 2),
+            0,
+            0,
+            Math.PI * 2,
+          );
+          context.stroke();
+        } else if (item.type === "arrow" || item.type === "line" || item.type === "pen") {
+          context.beginPath();
+          context.moveTo(item.x, item.y);
+          if (item.type === "pen" && Array.isArray(item.points)) {
+            for (const point of item.points) context.lineTo(point.x, point.y);
+          } else {
+            context.lineTo(item.x2, item.y2);
+          }
+          context.stroke();
+          if (item.type === "arrow") {
+            const angle = Math.atan2(item.y2 - item.y, item.x2 - item.x);
+            const head = 12;
+            context.beginPath();
+            context.moveTo(item.x2, item.y2);
+            context.lineTo(item.x2 - head * Math.cos(angle - Math.PI / 6), item.y2 - head * Math.sin(angle - Math.PI / 6));
+            context.moveTo(item.x2, item.y2);
+            context.lineTo(item.x2 - head * Math.cos(angle + Math.PI / 6), item.y2 - head * Math.sin(angle + Math.PI / 6));
+            context.stroke();
+          }
+        } else if (item.type === "text") {
+          context.font = "18px Inter, sans-serif";
+          context.fillText(item.text || "文字", item.x, item.y);
+        }
+      }
+
+      function normalizeRect(start, end) {
+        return {
+          x: Math.min(start.x, end.x),
+          y: Math.min(start.y, end.y),
+          width: Math.abs(end.x - start.x),
+          height: Math.abs(end.y - start.y),
+        };
+      }
+
+      function sketchErase(point) {
+        const hitIndex = state.sketch.elements.findLastIndex((item) => {
+          const bounds = item.type === "line" || item.type === "arrow" || item.type === "pen"
+            ? { x: Math.min(item.x, item.x2), y: Math.min(item.y, item.y2), width: Math.abs(item.x2 - item.x), height: Math.abs(item.y2 - item.y) }
+            : { x: item.x, y: item.y, width: item.width || 30, height: item.height || 30 };
+          return point.x >= bounds.x - 12 && point.x <= bounds.x + bounds.width + 12
+            && point.y >= bounds.y - 12 && point.y <= bounds.y + bounds.height + 12;
+        });
+        if (hitIndex >= 0) {
+          recordHistory();
+          state.sketch.elements.splice(hitIndex, 1);
+          drawSketchScene();
+        }
+      }
+
+      function saveSketchFile() {
+        const file = activeFile();
+        if (!file || file.kind !== "sketch") return;
+        file.text = JSON.stringify({
+          type: "open-design-sketch",
+          version: 1,
+          elements: state.sketch.elements,
+          appState: {},
+          files: {},
+        }, null, 2);
+        file.size = new Blob([file.text]).size;
+        downloadCurrentFile();
+        renderFileList();
+        showToast("草图已保存并下载");
+      }
+
+      function exportSketchPng() {
+        const file = activeFile();
+        if (!file || file.kind !== "sketch") return;
+        const link = document.createElement("a");
+        link.href = elements.sketchCanvas.toDataURL("image/png");
+        link.download = file.name.replace(/\.sketch\.json$/i, "") + ".png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast("草图 PNG 已导出");
+      }
+
+      function clearSketch() {
+        recordHistory();
+        state.sketch.elements = [];
+        drawSketchScene();
+        showToast("草图画布已清空");
+      }
+
+      function createBlankSketch() {
+        const base = "sketch-" + new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19) + ".sketch.json";
+        const record = {
+          name: base,
+          kind: "sketch",
+          text: JSON.stringify({
+            type: "open-design-sketch",
+            version: 1,
+            elements: [],
+            appState: {},
+            files: {},
+          }, null, 2),
+          size: 0,
+          type: "application/json",
+        };
+        record.size = new Blob([record.text]).size;
+        state.files.set(record.name, record);
+        state.activeFileName = record.name;
+        openFile(record.name);
+        closeFilesPanel();
+        showToast("已创建空白草图");
+      }
+
+      function setSketchTool(tool) {
+        state.sketch.tool = tool;
+        document.querySelectorAll("[data-sketch-tool]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.sketchTool === tool);
+        });
+        elements.sketchCanvas.style.cursor = tool === "select" ? "default" : tool === "erase" ? "not-allowed" : "crosshair";
+      }
+
+      function startSketchPointer(event) {
+        const tool = state.sketch.tool;
+        const point = sketchPoint(event);
+        if (tool === "erase") {
+          sketchErase(point);
+          return;
+        }
+        if (tool === "text") {
+          const text = window.prompt("输入草图文字");
+          if (text?.trim()) {
+            recordHistory();
+            state.sketch.elements.push({ type: "text", x: point.x, y: point.y, text: text.trim(), color: state.sketch.color });
+            drawSketchScene();
+          }
+          return;
+        }
+        if (tool === "select") return;
+        state.sketch.activePointer = { tool, start: point, current: point, points: [point] };
+        elements.sketchCanvas.setPointerCapture?.(event.pointerId);
+      }
+
+      function moveSketchPointer(event) {
+        const active = state.sketch.activePointer;
+        if (!active) return;
+        active.current = sketchPoint(event);
+        active.points.push(active.current);
+        const rect = normalizeRect(active.start, active.current);
+        const preview = active.tool === "pen"
+          ? { type: "pen", x: active.start.x, y: active.start.y, x2: active.current.x, y2: active.current.y, points: active.points, color: state.sketch.color }
+          : { type: active.tool === "arrow" ? "arrow" : active.tool, ...rect, x2: active.current.x, y2: active.current.y, color: state.sketch.color };
+        drawSketchScene(preview);
+      }
+
+      function finishSketchPointer() {
+        const active = state.sketch.activePointer;
+        if (!active) return;
+        const rect = normalizeRect(active.start, active.current);
+        const element = active.tool === "pen"
+          ? { type: "pen", x: active.start.x, y: active.start.y, x2: active.current.x, y2: active.current.y, points: active.points, color: state.sketch.color }
+          : { type: active.tool === "arrow" ? "arrow" : active.tool, ...rect, x2: active.current.x, y2: active.current.y, color: state.sketch.color };
+        recordHistory();
+        state.sketch.elements.push(element);
+        state.sketch.activePointer = null;
+        drawSketchScene();
+      }
+
+      function currentFrameHtml() {
+        try {
+          const documentElement = elements.frame.contentDocument?.documentElement;
+          if (documentElement) {
+            return "<!doctype html>\\n" + documentElement.outerHTML;
+          }
+        } catch (_error) {
+          // A user-provided HTML document may opt into a different origin.
+        }
+        return state.code;
+      }
+
+      function syncCodeFromFrame() {
+        const html = currentFrameHtml();
+        if (html.trim()) state.code = html;
+        elements.editor.value = state.code;
+      }
+
+      function renderFrame() {
+        elements.frame.srcdoc = buildPreviewHtml(state.code);
+        const file = activeFile();
+        if (file && file.kind === "html") {
+          file.text = state.code;
+          file.size = new Blob([state.code]).size;
+        }
+        state.codeDirty = false;
+        elements.codeStatus.textContent = "已保存";
+        elements.codeStatus.classList.remove("dirty");
+      }
+
+      function updateCodeStatus(dirty) {
+        state.codeDirty = dirty;
+        elements.codeStatus.textContent = dirty ? "有未运行修改" : "已保存";
+        elements.codeStatus.classList.toggle("dirty", dirty);
+      }
+
+      function setMode(mode) {
+        if (mode === state.mode) return;
+        const file = activeFile();
+        if (!file || file.kind !== "html") {
+          showToast("只有 HTML 文件支持预览与代码切换");
+          return;
+        }
+        if (mode === "code") syncCodeFromFrame();
+        if (mode === "preview" && state.mode === "code") {
+          state.code = elements.editor.value;
+          file.text = state.code;
+          renderFrame();
+        }
+        setSurfaceMode(mode);
+        if (mode === "code") {
+          elements.editor.value = file.text || state.code;
+          window.setTimeout(() => elements.editor.focus(), 0);
+        }
+      }
+
+      function setViewport(viewport) {
+        state.viewport = viewport;
+        const labels = { desktop: "桌面端", tablet: "平板端", mobile: "移动端" };
+        elements.viewportLabel.textContent = labels[viewport];
+        elements.canvas.dataset.viewport = viewport;
+        elements.canvas.style.setProperty("--preview-zoom", String(state.zoom / 100));
+        elements.frameWrap.style.setProperty("--frame-width", viewport === "tablet" ? "820px" : "390px");
+        elements.frameWrap.style.setProperty("--frame-height", viewport === "tablet" ? "1180px" : "844px");
+        document.querySelectorAll("[data-viewport]").forEach((item) => {
+          item.classList.toggle("active", item.dataset.viewport === viewport);
+        });
+        closeMenus();
+        resizeDrawingLayer();
+      }
+
+      function setZoom(zoom) {
+        state.zoom = zoom;
+        elements.zoomLabel.textContent = zoom + "%";
+        elements.canvas.style.setProperty("--preview-zoom", String(zoom / 100));
+        document.querySelectorAll("[data-zoom]").forEach((item) => {
+          item.classList.toggle("active", Number(item.dataset.zoom) === zoom);
+        });
+        closeMenus();
+        renderCommentMarkers();
+        resizeDrawingLayer();
+      }
+
+      function closeMenus() {
+        elements.viewportMenu.hidden = true;
+        elements.zoomMenu.hidden = true;
+        elements.viewportSelect.classList.remove("open");
+        elements.zoomControl.classList.remove("open");
+        document.querySelector('[data-action="viewport-toggle"]')?.setAttribute("aria-expanded", "false");
+        document.querySelector('[data-action="zoom-toggle"]')?.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleMenu(menu, wrapper, trigger) {
+        const opening = menu.hidden;
+        closeMenus();
+        menu.hidden = !opening;
+        wrapper.classList.toggle("open", opening);
+        trigger.setAttribute("aria-expanded", String(opening));
+      }
+
+      function setTool(tool) {
+        state.tool = state.tool === tool ? null : tool;
+        document.querySelectorAll("[data-tool]").forEach((button) => {
+          const active = button.dataset.tool === state.tool;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+        elements.drawLayer.classList.toggle("visible", state.tool === "draw");
+        elements.drawToolbar.classList.toggle("visible", state.tool === "draw");
+        if (state.tool === "comment") {
+          elements.toolHint.hidden = false;
+          elements.toolHint.textContent = "点击预览中的元素添加评论";
+          showToast("评论模式已开启");
+        } else if (state.tool === "edit") {
+          elements.toolHint.hidden = false;
+          elements.toolHint.textContent = "点击预览中的元素进行手动编辑";
+          showToast("编辑模式已开启");
+        } else {
+          elements.toolHint.hidden = true;
+        }
+        if (state.tool !== "edit") {
+          elements.editPanel.classList.remove("visible");
+          elements.selectionOutline.hidden = true;
+        }
+        resizeDrawingLayer();
+      }
+
+      function framePoint(message) {
+        const canvasRect = elements.canvas.getBoundingClientRect();
+        const frameRect = elements.frame.getBoundingClientRect();
+        const zoom = state.zoom / 100;
+        const x = (frameRect.left - canvasRect.left) + message.rect.x * zoom;
+        const y = (frameRect.top - canvasRect.top) + (message.rect.y - (message.scrollY || 0)) * zoom;
+        return { x, y };
+      }
+
+      function renderCommentMarkers() {
+        elements.commentLayer.innerHTML = "";
+        state.comments.forEach((comment, index) => {
+          const marker = document.createElement("button");
+          marker.type = "button";
+          marker.className = "comment-marker";
+          marker.textContent = String(index + 1);
+          marker.title = comment.note;
+          marker.style.left = comment.position.x + "px";
+          marker.style.top = comment.position.y + "px";
+          marker.addEventListener("click", () => {
+            openComments();
+            showToast(comment.note);
+          });
+          elements.commentLayer.appendChild(marker);
+        });
+        elements.commentCount.textContent = String(state.comments.length);
+        elements.commentEmpty.hidden = state.comments.length > 0;
+      }
+
+      function openComments() {
+        elements.commentPanel.classList.add("visible");
+        document.querySelector('[data-action="comments"]')?.setAttribute("aria-expanded", "true");
+        renderCommentList();
+      }
+
+      function closeComments() {
+        elements.commentPanel.classList.remove("visible");
+        document.querySelector('[data-action="comments"]')?.setAttribute("aria-expanded", "false");
+        elements.commentComposer.hidden = true;
+      }
+
+      function renderCommentList() {
+        elements.commentList.querySelectorAll(".comment-card").forEach((card) => card.remove());
+        state.comments.forEach((comment, index) => {
+          const card = document.createElement("article");
+          card.className = "comment-card";
+          card.innerHTML =
+            '<div class="comment-card-head"><span>#' +
+            (index + 1) +
+            " · " +
+            escapeHtml(comment.targetText || comment.targetId) +
+            '</span><span>刚刚</span></div><p>' +
+            escapeHtml(comment.note) +
+            "</p>";
+          elements.commentList.appendChild(card);
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function beginComment(message) {
+        state.draftComment = {
+          targetId: message.id,
+          targetText: message.text,
+          position: framePoint(message),
+        };
+        openComments();
+        elements.commentComposer.hidden = false;
+        elements.commentDraft.value = "";
+        elements.commentDraft.focus();
+      }
+
+      function saveComment() {
+        const note = elements.commentDraft.value.trim();
+        if (!note || !state.draftComment) {
+          showToast("请先写下评论内容");
+          return;
+        }
+        state.comments.push({ ...state.draftComment, note });
+        state.draftComment = null;
+        elements.commentDraft.value = "";
+        elements.commentComposer.hidden = true;
+        renderCommentMarkers();
+        renderCommentList();
+        showToast("评论已添加");
+      }
+
+      function beginEdit(message) {
+        state.selectedTarget = message;
+        elements.editText.value = message.text || "";
+        elements.editColor.value = "#17243b";
+        elements.editPanel.classList.add("visible");
+        elements.selectionOutline.hidden = false;
+        const canvasRect = elements.canvas.getBoundingClientRect();
+        const frameRect = elements.frame.getBoundingClientRect();
+        const zoom = state.zoom / 100;
+        elements.selectionOutline.style.left = frameRect.left - canvasRect.left + message.rect.x * zoom + "px";
+        elements.selectionOutline.style.top = frameRect.top - canvasRect.top + (message.rect.y - (message.scrollY || 0)) * zoom + "px";
+        elements.selectionOutline.style.width = Math.max(16, message.rect.width * zoom) + "px";
+        elements.selectionOutline.style.height = Math.max(16, message.rect.height * zoom) + "px";
+        elements.editText.focus();
+      }
+
+      function applyEdit() {
+        if (!state.selectedTarget) return;
+        recordHistory();
+        elements.frame.contentWindow?.postMessage(
+          {
+            type: "design-apply-edit",
+            id: state.selectedTarget.id,
+            text: elements.editText.value,
+            color: elements.editColor.value,
+          },
+          "*",
+        );
+        elements.editPanel.classList.remove("visible");
+        elements.selectionOutline.hidden = true;
+        showToast("修改已应用到预览");
+        state.selectedTarget = null;
+      }
+
+      function resizeDrawingLayer() {
+        const rect = elements.canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        elements.drawLayer.width = Math.max(1, Math.floor(rect.width * ratio));
+        elements.drawLayer.height = Math.max(1, Math.floor(rect.height * ratio));
+        elements.drawLayer.style.width = rect.width + "px";
+        elements.drawLayer.style.height = rect.height + "px";
+        const context = elements.drawLayer.getContext("2d");
+        if (context) {
+          context.setTransform(ratio, 0, 0, ratio, 0, 0);
+          context.lineCap = "round";
+          context.lineJoin = "round";
+          context.lineWidth = 3;
+          context.strokeStyle = elements.drawColor.value;
+        }
+      }
+
+      function drawStart(event) {
+        if (state.tool !== "draw") return;
+        drawing = true;
+        const rect = elements.drawLayer.getBoundingClientRect();
+        lastDrawPoint = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      }
+
+      function drawMove(event) {
+        if (!drawing || !lastDrawPoint) return;
+        const context = elements.drawLayer.getContext("2d");
+        if (!context) return;
+        const rect = elements.drawLayer.getBoundingClientRect();
+        const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        context.strokeStyle = elements.drawColor.value;
+        context.beginPath();
+        context.moveTo(lastDrawPoint.x, lastDrawPoint.y);
+        context.lineTo(point.x, point.y);
+        context.stroke();
+        lastDrawPoint = point;
+      }
+
+      function drawEnd() {
+        drawing = false;
+        lastDrawPoint = null;
+      }
+
+      function clearDrawing() {
+        const context = elements.drawLayer.getContext("2d");
+        if (context) context.clearRect(0, 0, elements.drawLayer.width, elements.drawLayer.height);
+      }
+
+      function downloadHtml(filename = "index.html") {
+        const file = activeFile();
+        if (!file) return;
+        if (file.kind !== "html") {
+          downloadCurrentFile();
+          return;
+        }
+        syncCodeFromFrame();
+        const blob = new Blob([state.code], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = file.name || filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function openPreviewWindow() {
+        const file = activeFile();
+        if (!file) return;
+        if (file.kind !== "html") {
+          openCurrentFileInNewWindow();
+          return;
+        }
+        syncCodeFromFrame();
+        const blob = new Blob([state.code], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const popup = window.open(url, "_blank");
+        if (!popup) {
+          showToast("浏览器拦截了新窗口，请允许弹窗后重试");
+          URL.revokeObjectURL(url);
+          return;
+        }
+        window.setTimeout(() => URL.revokeObjectURL(url), 15000);
+      }
+
+      function shareProject() {
+        const shareText = `Open Design 独立设计工作区 · ${state.activeFileName}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(shareText).then(
+            () => showToast("项目分享信息已复制"),
+            () => showToast("已准备分享信息"),
+          );
+        } else {
+          showToast("已准备分享信息");
+        }
+      }
+
+      function printPreview() {
+        syncCodeFromFrame();
+        const popup = window.open("", "_blank");
+        if (!popup) {
+          showToast("浏览器拦截了打印预览窗口");
+          return;
+        }
+        popup.document.open();
+        popup.document.write(state.code);
+        popup.document.close();
+        popup.focus();
+        window.setTimeout(() => popup.print(), 450);
+        showToast("已打开打印预览，可保存为 PDF");
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== elements.frame.contentWindow) return;
+        const message = event.data || {};
+        if (message.type === "design-element-click") {
+          if (state.tool === "comment") {
+            beginComment(message);
+          } else if (state.tool === "edit") {
+            beginEdit(message);
+          } else if (message.id) {
+            showToast("已选中「" + message.text + "」");
+          }
+        } else if (message.type === "design-billing-change") {
+          showToast(message.yearly ? "已切换为按年计费" : "已切换为按月计费");
+        } else if (message.type === "design-action") {
+          showToast("已触发操作：「" + message.label + "」");
+        } else if (message.type === "design-edit-applied") {
+          state.code = currentFrameHtml();
+          elements.editor.value = state.code;
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-action], [data-mode], [data-tool], [data-viewport], [data-zoom]");
+        if (!target) return;
+        const action = target.dataset.action;
+
+        if (target.dataset.mode) {
+          setMode(target.dataset.mode);
+          return;
+        }
+        if (target.dataset.tool) {
+          setTool(target.dataset.tool);
+          return;
+        }
+        if (target.dataset.viewport) {
+          setViewport(target.dataset.viewport);
+          return;
+        }
+        if (target.dataset.zoom) {
+          setZoom(Number(target.dataset.zoom));
+          return;
+        }
+
+        if (action === "viewport-toggle") {
+          toggleMenu(elements.viewportMenu, elements.viewportSelect, target);
+        } else if (action === "zoom-toggle") {
+          toggleMenu(elements.zoomMenu, elements.zoomControl, target);
+        } else if (action === "reload") {
+          if (activeFile()?.kind === "html") {
+            syncCodeFromFrame();
+            renderFrame();
+            showToast("预览已刷新");
+          } else if (activeFile()?.kind === "sketch") {
+            drawSketchScene();
+            showToast("草图已刷新");
+          } else {
+            renderActiveFile();
+            showToast("文件已刷新");
+          }
+        } else if (action === "export") {
+          downloadHtml();
+          showToast("当前文件已下载");
+        } else if (action === "open-window") {
+          openPreviewWindow();
+        } else if (action === "share") {
+          shareProject();
+        } else if (action === "screenshot") {
+          printPreview();
+        } else if (action === "comments") {
+          if (elements.commentPanel.classList.contains("visible")) closeComments();
+          else openComments();
+        } else if (action === "close-comments") {
+          closeComments();
+        } else if (action === "cancel-comment") {
+          state.draftComment = null;
+          elements.commentComposer.hidden = true;
+        } else if (action === "save-comment") {
+          saveComment();
+        } else if (action === "close-edit") {
+          elements.editPanel.classList.remove("visible");
+          elements.selectionOutline.hidden = true;
+          state.selectedTarget = null;
+        } else if (action === "apply-edit") {
+          applyEdit();
+        } else if (action === "run-code") {
+          const file = activeFile();
+          if (file && (file.kind === "html" || file.kind === "code" || file.kind === "text")) {
+            recordHistory();
+            state.code = elements.editor.value;
+            file.text = state.code;
+            if (file.kind === "html") {
+              renderFrame();
+              setMode("preview");
+              showToast("代码已运行");
+            } else {
+              renderDocumentFile(file);
+              showToast("文件内容已更新");
+            }
+          }
+        } else if (action === "clear-drawing") {
+          clearDrawing();
+        } else if (action === "finish-drawing") {
+          setTool(null);
+          showToast("标注已保留在当前画布");
+        } else if (action === "files-tab") {
+          openFilesPanel();
+        } else if (action === "close-files") {
+          closeFilesPanel();
+        } else if (action === "download-file") {
+          downloadCurrentFile();
+          showToast("当前文件已下载");
+        } else if (action === "open-document") {
+          openCurrentFileInNewWindow();
+        } else if (action === "clear-sketch") {
+          clearSketch();
+        } else if (action === "export-sketch") {
+          exportSketchPng();
+        } else if (action === "save-sketch") {
+          saveSketchFile();
+        } else if (action === "new-sketch") {
+          createBlankSketch();
+        } else if (action === "file-tab") {
+          showToast(`当前打开的是 ${state.activeFileName}`);
+        } else if (action === "new-tab") {
+          openFilesPanel();
+          elements.fileInput.click();
+        } else if (action === "undo") {
+          undoLastChange();
+        }
+      });
+
+      elements.editor.addEventListener("input", () => updateCodeStatus(true));
+      elements.fileInput.addEventListener("change", () => {
+        void importFiles(elements.fileInput.files);
+        elements.fileInput.value = "";
+      });
+      elements.fileDropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        elements.fileDropZone.classList.add("drag-over");
+      });
+      elements.fileDropZone.addEventListener("dragleave", () => {
+        elements.fileDropZone.classList.remove("drag-over");
+      });
+      elements.fileDropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        elements.fileDropZone.classList.remove("drag-over");
+        void importFiles(event.dataTransfer?.files);
+      });
+      elements.sketchCanvas.addEventListener("pointerdown", startSketchPointer);
+      elements.sketchCanvas.addEventListener("pointermove", moveSketchPointer);
+      elements.sketchCanvas.addEventListener("pointerup", finishSketchPointer);
+      elements.sketchCanvas.addEventListener("pointercancel", finishSketchPointer);
+      elements.sketchCanvas.addEventListener("pointerleave", finishSketchPointer);
+      elements.sketchColor.addEventListener("input", () => {
+        state.sketch.color = elements.sketchColor.value;
+      });
+      document.querySelectorAll("[data-sketch-tool]").forEach((button) => {
+        button.addEventListener("click", () => setSketchTool(button.dataset.sketchTool));
+      });
+      elements.drawLayer.addEventListener("pointerdown", drawStart);
+      elements.drawLayer.addEventListener("pointermove", drawMove);
+      elements.drawLayer.addEventListener("pointerup", drawEnd);
+      elements.drawLayer.addEventListener("pointercancel", drawEnd);
+      elements.drawLayer.addEventListener("pointerleave", drawEnd);
+      elements.drawColor.addEventListener("input", resizeDrawingLayer);
+      elements.frame.addEventListener("load", () => {
+        if (state.mode === "preview") {
+          state.codeDirty = false;
+          elements.codeStatus.textContent = "已保存";
+          elements.codeStatus.classList.remove("dirty");
+        }
+        renderCommentMarkers();
+      });
+      window.addEventListener("resize", () => {
+        resizeDrawingLayer();
+        renderCommentMarkers();
+      });
+      elements.canvas.addEventListener("scroll", renderCommentMarkers, { passive: true });
+      document.addEventListener("pointerdown", (event) => {
+        if (!event.target.closest("#viewportSelect") && !event.target.closest("#zoomControl")) closeMenus();
+      });
+
+      setViewport("desktop");
+      setZoom(100);
+      renderFileList();
+      renderActiveFile();
+      resizeDrawingLayer();
+    </script>
+  </body>
+</html>
